@@ -49,19 +49,19 @@ function create() {
             y++;
         }
     }
-
+console.log(1);
     // Habilita interação
     this.input.setDraggable(this.pieces);
-
+console.log(2);
     this.input.on('dragstart', (pointer, gameObject) => {
         gameObject.setScale(0.55);
     });
-
+console.log(3);
     this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
         gameObject.x = dragX;
         gameObject.y = dragY;
     });
-
+console.log(4);
     this.input.on('dragend', (pointer, gameObject) => {
         gameObject.setScale(0.5);
         // Aqui você pode implementar regras de posicionamento
