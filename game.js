@@ -16,7 +16,7 @@ const game = new Phaser.Game(config);
 function preload() {
     // Aqui você pode carregar imagens personalizadas
     this.load.image('piece_white', 'bb.png');
-    this.load.image('piece_black', 'https://i.imgur.com/6o5Zf7m.png');
+    this.load.image('piece_black', 'bp.png');
 }
 
 function create() {
@@ -25,20 +25,31 @@ function create() {
 
     // Adiciona peças iniciais (exemplo simplificado)
     this.pieces = [];
-    /*
-    let piece = this.add.image(120,120,'piece_white').setScale(0.1);
-    this.pieces.push(piece);
 
+    let x = 0;
+    let y = 0;
     for (let i = 0; i < 15; i++) {
-        let piece = this.add.image(100, 100 + i * 5, 'piece_white').setScale(0.5);
+        let piece = this.add.image( 28 + x * 34 ,642 - y * 55, 'piece_white').setScale(0.018);
         this.pieces.push(piece);
+        x++;
+        if(x>4){
+            x=0;
+            y++;
+        }
     }
 
+    x = 0;
+    y = 0;
     for (let i = 0; i < 15; i++) {
-        let piece = this.add.image(700, 500 - i * 5, 'piece_black').setScale(0.5).setTint(0x000000);
+        let piece = this.add.image( 325 - x * 34 ,642 - y * 55, 'piece_black').setScale(0.1).setTint(0x000000);
         this.pieces.push(piece);
+        x++;
+        if(x>4){
+            x=0;
+            y++;
+        }
     }
-*/
+
     // Habilita interação
     this.input.setDraggable(this.pieces);
 
