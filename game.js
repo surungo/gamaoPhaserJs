@@ -1,8 +1,8 @@
 // Configuração do jogo Phaser
 const config = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    width: 350,
+    height: 680,
     backgroundColor: '#d2b48c', // cor de fundo tipo madeira
     scene: {
         preload: preload,
@@ -15,7 +15,7 @@ const game = new Phaser.Game(config);
 
 function preload() {
     // Aqui você pode carregar imagens personalizadas
-    this.load.image('piece_white', 'https://i.imgur.com/6o5Zf7m.png');
+    this.load.image('piece_white', 'bb.png');
     this.load.image('piece_black', 'https://i.imgur.com/6o5Zf7m.png');
 }
 
@@ -25,6 +25,9 @@ function create() {
 
     // Adiciona peças iniciais (exemplo simplificado)
     this.pieces = [];
+    /*
+    let piece = this.add.image(120,120,'piece_white').setScale(0.1);
+    this.pieces.push(piece);
 
     for (let i = 0; i < 15; i++) {
         let piece = this.add.image(100, 100 + i * 5, 'piece_white').setScale(0.5);
@@ -35,7 +38,7 @@ function create() {
         let piece = this.add.image(700, 500 - i * 5, 'piece_black').setScale(0.5).setTint(0x000000);
         this.pieces.push(piece);
     }
-
+*/
     // Habilita interação
     this.input.setDraggable(this.pieces);
 
@@ -63,29 +66,34 @@ function drawBoard(scene) {
     graphics.lineStyle(2, 0x000000, 1);
 
     // Desenha retângulo do tabuleiro
-    graphics.strokeRect(50, 50, 700, 500);
+    graphics.strokeRect(10, 10, 330,330);
+    graphics.strokeRect(10, 340, 330,330);
 
     // Desenha divisões (triângulos do gamão)
-    const triangleWidth = 700 / 12;
+    const triangleHeight = 660 / 12;
     for (let i = 0; i < 12; i++) {
-        let x = 50 + i * triangleWidth;
+        let y = 10 + i * triangleHeight;
         let color = (i % 2 === 0) ? 0x8b4513 : 0xf5deb3;
         graphics.fillStyle(color, 1);
-
+        let x = 10;
+        
         // Triângulo superior
         graphics.beginPath();
-        graphics.moveTo(x, 50);
-        graphics.lineTo(x + triangleWidth, 50);
-        graphics.lineTo(x + triangleWidth / 2, 200);
+        graphics.moveTo(x, y);
+        graphics.lineTo(x, y + triangleHeight);
+        x=150;
+        graphics.lineTo(x, y + triangleHeight / 2);
         graphics.closePath();
         graphics.fillPath();
 
+        x = 340;
         // Triângulo inferior
         graphics.fillStyle(color, 1);
         graphics.beginPath();
-        graphics.moveTo(x, 550);
-        graphics.lineTo(x + triangleWidth, 550);
-        graphics.lineTo(x + triangleWidth / 2, 400);
+        graphics.moveTo(x, y);
+        graphics.lineTo(x,y+ triangleHeight);
+        x = 180;
+        graphics.lineTo(x,y + triangleHeight / 2);
         graphics.closePath();
         graphics.fillPath();
     }
