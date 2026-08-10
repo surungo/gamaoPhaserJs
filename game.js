@@ -1,13 +1,32 @@
 // Configuração do jogo Phaser
+const CANVAS_WIDTH = 800;
+const CANVAS_HEIGHT = 1200;
+const MARGIM_TOP = 20;
+const MARGIM_RIGHT = 40;
+const MARGIM_DOWN = 60;
+const MARGIM_LEFT = 80;
+const BOX_WIDTH = CANVAS_WIDTH - MARGIM_LEFT - MARGIM_RIGHT;
+const CENTER_SPACE = 40;
+const BOX_HEIGHT=(CANVAS_HEIGHT - MARGIM_TOP - MARGIM_DOWN)/2;
+const BOX_TOP=MARGIM_TOP + BOX_HEIGHT;
+const ESCALE_WHITE=0.03;
+const QTD_TRIANGLE=12;
+const TRIANGLE_HEIGHT = (BOX_HEIGHT*2) / QTD_TRIANGLE;
+const PIECE_SIZE = 62;
+
 const config = {
     type: Phaser.AUTO,
-    width: 350,
-    height: 680,
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
     backgroundColor: '#d2b48c', // cor de fundo tipo madeira
     scene: {
         preload: preload,
         create: create,
         update: update
+    },
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
     }
 };
 
@@ -20,7 +39,7 @@ function preload() {
 }
 
 function create() {
-    let escalaWhite=0.018;
+    
     // Desenha o tabuleiro básico
     drawBoard(this);
 
@@ -29,9 +48,18 @@ function create() {
     let deep =1;
     let x = 0;
     let y = 0;
+    let PIECE_START_LEFT=(MARGIM_LEFT+(PIECE_SIZE/2));
+    let PIECE_START_DOWN=(CANVAS_HEIGHT-MARGIM_DOWN-(TRIANGLE_HEIGHT/2));
+    let PIECE_SPACE=TRIANGLE_HEIGHT;
     for (let i = 0; i < 15; i++) {
-        let piece = this.add.image( 28 + x * 34 ,642 - y * 55, 'piece_white').setScale(escalaWhite).setInteractive()
-        .setDepth(1);
+        deep++;
+        let piece = this.add.image( 
+            PIECE_START_LEFT + x * PIECE_SIZE ,
+            PIECE_START_DOWN - y * PIECE_SPACE ,
+            'piece_white')
+            .setScale(ESCALE_WHITE)
+            .setInteractive()
+            .setDepth(deep);
         this.pieces.push(piece);
         x++;
         if(x>4){
@@ -39,7 +67,7 @@ function create() {
             y++;
         }
     }
-
+/*
     x = 0;
     y = 0;
     for (let i = 0; i < 15; i++) {
@@ -52,20 +80,16 @@ function create() {
             y++;
         }
     }
-    
-console.log(1);
+   */ 
     // Habilita interação
     this.input.setDraggable(this.pieces);
-console.log(2);
     this.input.on('dragstart', (pointer, gameObject) => {
         gameObject;//.setScale(escalaWhite);
     });
-console.log(3);
     this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
         gameObject.x = dragX;
         gameObject.y = dragY;
     });
-console.log(4);
     this.input.on('dragend', (pointer, gameObject) => {
         deep++;
         gameObject.setDepth(deep);//.setScale(escalaWhite);
@@ -82,34 +106,37 @@ function drawBoard(scene) {
     graphics.lineStyle(2, 0x000000, 1);
 
     // Desenha retângulo do tabuleiro
-    graphics.strokeRect(10, 10, 330,330);
-    graphics.strokeRect(10, 340, 330,330);
+    
+    
+    graphics.strokeRect(MARGIM_LEFT, MARGIM_TOP, BOX_WIDTH, BOX_HEIGHT);
+    
+    graphics.strokeRect(MARGIM_LEFT, BOX_TOP, BOX_WIDTH, BOX_HEIGHT);
 
     // Desenha divisões (triângulos do gamão)
-    const triangleHeight = 660 / 12;
+    
     for (let i = 0; i < 12; i++) {
-        let y = 10 + i * triangleHeight;
+        let y = MARGIM_TOP + i * TRIANGLE_HEIGHT;
         let color = (i % 2 === 0) ? 0x8b4513 : 0xf5deb3;
         graphics.fillStyle(color, 1);
-        let x = 10;
+        let x = MARGIM_LEFT;
         
         // Triângulo superior
         graphics.beginPath();
         graphics.moveTo(x, y);
-        graphics.lineTo(x, y + triangleHeight);
-        x=150;
-        graphics.lineTo(x, y + triangleHeight / 2);
+        graphics.lineTo(x, y + TRIANGLE_HEIGHT);
+        x = (BOX_WIDTH/2+MARGIM_LEFT)-(CENTER_SPACE/2);
+        graphics.lineTo(x, y + TRIANGLE_HEIGHT / 2);
         graphics.closePath();
         graphics.fillPath();
 
-        x = 340;
+        x = BOX_WIDTH+MARGIM_LEFT;
         // Triângulo inferior
         graphics.fillStyle(color, 1);
         graphics.beginPath();
         graphics.moveTo(x, y);
-        graphics.lineTo(x,y+ triangleHeight);
-        x = 180;
-        graphics.lineTo(x,y + triangleHeight / 2);
+        graphics.lineTo(x,y + TRIANGLE_HEIGHT);
+        x = (x/2)+(CENTER_SPACE/2);
+        graphics.lineTo(x,y + TRIANGLE_HEIGHT / 2);
         graphics.closePath();
         graphics.fillPath();
     }
