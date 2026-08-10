@@ -20,16 +20,18 @@ function preload() {
 }
 
 function create() {
+    let escalaWhite=0.018;
     // Desenha o tabuleiro básico
     drawBoard(this);
 
     // Adiciona peças iniciais (exemplo simplificado)
     this.pieces = [];
-
+    let deep =1;
     let x = 0;
     let y = 0;
     for (let i = 0; i < 15; i++) {
-        let piece = this.add.image( 28 + x * 34 ,642 - y * 55, 'piece_white').setScale(0.018);
+        let piece = this.add.image( 28 + x * 34 ,642 - y * 55, 'piece_white').setScale(escalaWhite).setInteractive()
+        .setDepth(1);
         this.pieces.push(piece);
         x++;
         if(x>4){
@@ -41,7 +43,8 @@ function create() {
     x = 0;
     y = 0;
     for (let i = 0; i < 15; i++) {
-        let piece = this.add.image( 325 - x * 34 ,642 - y * 55, 'piece_black').setScale(0.1).setTint(0x000000);
+        let piece = this.add.image( 325 - x * 34 ,642 - y * 55, 'piece_black').setScale(0.1).setInteractive()
+        .setDepth(1);
         this.pieces.push(piece);
         x++;
         if(x>4){
@@ -49,12 +52,13 @@ function create() {
             y++;
         }
     }
+    
 console.log(1);
     // Habilita interação
     this.input.setDraggable(this.pieces);
 console.log(2);
     this.input.on('dragstart', (pointer, gameObject) => {
-        gameObject.setScale(0.55);
+        gameObject;//.setScale(escalaWhite);
     });
 console.log(3);
     this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
@@ -63,7 +67,8 @@ console.log(3);
     });
 console.log(4);
     this.input.on('dragend', (pointer, gameObject) => {
-        gameObject.setScale(0.5);
+        deep++;
+        gameObject.setDepth(deep);//.setScale(escalaWhite);
         // Aqui você pode implementar regras de posicionamento
     });
 }
