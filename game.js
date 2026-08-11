@@ -1,9 +1,9 @@
 // Configuração do jogo Phaser
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 1200;
-const MARGIM_TOP = 20;
+const MARGIM_TOP = 90;
 const MARGIM_RIGHT = 60;
-const MARGIM_DOWN = 80;
+const MARGIM_DOWN = 20;
 const MARGIM_LEFT = 60;
 const BOX_WIDTH = CANVAS_WIDTH - MARGIM_LEFT - MARGIM_RIGHT;
 const CENTER_SPACE = 24;
@@ -117,10 +117,19 @@ function update() {
 function drawBoard(scene) {
     const graphics = scene.add.graphics();
     graphics.lineStyle(2, 0x000000, 1);
+    
+    graphics.strokeRect(
+        MARGIM_LEFT,
+        10,
+        (BOX_WIDTH/2),
+        75);
+    graphics.strokeRect(
+        MARGIM_LEFT+(BOX_WIDTH/2),
+        10,
+        (BOX_WIDTH/2), 
+        75);
 
     // Desenha retângulo do tabuleiro
-    
-    
     graphics.strokeRect(MARGIM_LEFT, MARGIM_TOP, BOX_WIDTH, BOX_HEIGHT);
     
     graphics.strokeRect(MARGIM_LEFT, BOX_TOP, BOX_WIDTH, BOX_HEIGHT);
