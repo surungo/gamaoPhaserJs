@@ -49,8 +49,10 @@ function create() {
     let x = 0;
     let y = 0;
     let PIECE_START_LEFT=(MARGIM_LEFT+(PIECE_SIZE/2));
+    let PIECE_START_RIGHT=(MARGIM_LEFT+BOX_WIDTH-(PIECE_SIZE/2));
     let PIECE_START_DOWN=(CANVAS_HEIGHT-MARGIM_DOWN-(TRIANGLE_HEIGHT/2));
     let PIECE_SPACE=TRIANGLE_HEIGHT;
+    
     for (let i = 0; i < 15; i++) {
         deep++;
         let piece = this.add.image( 
@@ -61,18 +63,15 @@ function create() {
             .setInteractive()
             .setDepth(deep);
         this.pieces.push(piece);
-        x++;
-        if(x>4){
-            x=0;
-            y++;
-        }
-    }
-/*
-    x = 0;
-    y = 0;
-    for (let i = 0; i < 15; i++) {
-        let piece = this.add.image( 325 - x * 34 ,642 - y * 55, 'piece_black').setScale(0.1).setInteractive()
-        .setDepth(1);
+        
+        deep++;
+        piece = this.add.image( 
+            PIECE_START_RIGHT - x * PIECE_SIZE ,
+            PIECE_START_DOWN - y * PIECE_SPACE, 
+            'piece_black')
+            .setScale(ESCALE_WHITE)
+            .setInteractive()
+            .setDepth(deep);
         this.pieces.push(piece);
         x++;
         if(x>4){
@@ -80,7 +79,7 @@ function create() {
             y++;
         }
     }
-   */ 
+
     // Habilita interação
     this.input.setDraggable(this.pieces);
     this.input.on('dragstart', (pointer, gameObject) => {
