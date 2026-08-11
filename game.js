@@ -2,9 +2,9 @@
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 1200;
 const MARGIM_TOP = 20;
-const MARGIM_RIGHT = 40;
-const MARGIM_DOWN = 60;
-const MARGIM_LEFT = 80;
+const MARGIM_RIGHT = 60;
+const MARGIM_DOWN = 80;
+const MARGIM_LEFT = 60;
 const BOX_WIDTH = CANVAS_WIDTH - MARGIM_LEFT - MARGIM_RIGHT;
 const CENTER_SPACE = 24;
 const BOX_HEIGHT=(CANVAS_HEIGHT - MARGIM_TOP - MARGIM_DOWN)/2;
@@ -52,13 +52,14 @@ function create() {
     let PIECE_START_RIGHT=(MARGIM_LEFT+BOX_WIDTH-(PIECE_SIZE/2));
     let PIECE_START_DOWN=(CANVAS_HEIGHT-MARGIM_DOWN-(TRIANGLE_HEIGHT/2));
     let PIECE_SPACE=TRIANGLE_HEIGHT;
-    
+    let PIECE_LEFT = 'piece_white';
+    let PIECE_RIGHT = 'piece_black';
     for (let i = 0; i < 15; i++) {
         deep++;
         let piece = this.add.image( 
             PIECE_START_LEFT + x * PIECE_SIZE ,
             PIECE_START_DOWN - y * PIECE_SPACE ,
-            'piece_white')
+            PIECE_LEFT)
             .setScale(ESCALE_WHITE)
             .setInteractive()
             .setDepth(deep);
@@ -68,15 +69,28 @@ function create() {
         piece = this.add.image( 
             PIECE_START_RIGHT - x * PIECE_SIZE ,
             PIECE_START_DOWN - y * PIECE_SPACE , 
-            'piece_black')
+            PIECE_RIGHT)
             .setScale(ESCALE_WHITE)
             .setInteractive()
             .setDepth(deep);
         this.pieces.push(piece);
         x++;
-        if(x>4){
+        if(i==4){
             x=0;
-            y++;
+            y=4;
+            PIECE_LEFT='piece_black';
+            PIECE_RIGHT='piece_white';
+            
+        }
+        if(i==7){
+           x=0;
+           y=6;
+        }
+        if(i==12){
+            x=0;
+            y=11;
+            PIECE_LEFT = 'piece_white';
+            PIECE_RIGHT = 'piece_black';
         }
     }
 
