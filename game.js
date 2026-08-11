@@ -6,7 +6,7 @@ const MARGIM_RIGHT = 40;
 const MARGIM_DOWN = 60;
 const MARGIM_LEFT = 80;
 const BOX_WIDTH = CANVAS_WIDTH - MARGIM_LEFT - MARGIM_RIGHT;
-const CENTER_SPACE = 40;
+const CENTER_SPACE = 24;
 const BOX_HEIGHT=(CANVAS_HEIGHT - MARGIM_TOP - MARGIM_DOWN)/2;
 const BOX_TOP=MARGIM_TOP + BOX_HEIGHT;
 const ESCALE_WHITE=0.03;
@@ -67,7 +67,7 @@ function create() {
         deep++;
         piece = this.add.image( 
             PIECE_START_RIGHT - x * PIECE_SIZE ,
-            PIECE_START_DOWN - y * PIECE_SPACE, 
+            PIECE_START_DOWN - y * PIECE_SPACE , 
             'piece_black')
             .setScale(ESCALE_WHITE)
             .setInteractive()
@@ -134,7 +134,7 @@ function drawBoard(scene) {
         graphics.beginPath();
         graphics.moveTo(x, y);
         graphics.lineTo(x,y + TRIANGLE_HEIGHT);
-        x = (x/2)+(CENTER_SPACE/2);
+        x = (x/2) + (CENTER_SPACE*2);
         graphics.lineTo(x,y + TRIANGLE_HEIGHT / 2);
         graphics.closePath();
         graphics.fillPath();
