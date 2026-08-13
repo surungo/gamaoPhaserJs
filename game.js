@@ -1,3 +1,226 @@
+// Variáveis de controle do ambiente 3D
+let scene3d, camera3d, renderer3d;
+let isDiceRolling = false;
+let gravity = -0.3;
+let bounceCount = 0;
+
+let diceMeshA, diceMeshB; // Agora temos dois objetos
+let bounceCountA = 0,
+    bounceCountB = 0;
+
+// Velocidades e rotações independentes para cada dado
+let diceVelocityA = { y: 0, rX: 0, rY: 0, rZ: 0 };
+let diceVelocityB = { y: 0, rX: 0, rY: 0, rZ: 0 };
+let targetRotationA = { x: 0, y: 0, z: 0 };
+let targetRotationB = { x: 0, y: 0, z: 0 };
+
+
+// Rotas exatas para as faces do dado apontarem para a camera
+const diceFacesRotations = {
+    5: { x: 0, y: 0, z: 0 },
+    6: { x: Math.PI, y: 0, z: 0 },
+    4: { x: -Math.PI / 2, y: 0, z: 0 },
+    3: { x: Math.PI / 2, y: 0, z: 0 },
+    1: { x: 0, y: -Math.PI / 2, z: 0 },
+    2: { x: 0, y: Math.PI / 2, z: 0 }
+};
+
+
+// 1. CONFIGURAÇÃO DO THREE.JS (DADO)
+function initThreeDice() {
+    const container = document.getElementById('three-container');
+    scene3d = new THREE.Scene();
+    
+    camera3d = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera3d.position.set(0, 0, 8);
+    camera3d.lookAt(0, 0, 0);
+    
+    renderer3d = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer3d.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer3d.domElement);
+    
+    // Gerando materiais (faces) compartilhados para os dois dados
+    const materials = [];
+    for (let i = 1; i <= 6; i++) {
+        materials.push(new THREE.MeshStandardMaterial({
+            map: createDiceTexture(i), // Usa a mesma função geradora de bolinhas
+            roughness: 0.2,
+            metalness: 0.1
+        }));
+    }
+    
+    const geometry = new THREE.BoxGeometry(0.4, 0.4, 0.4); // Dados levemente menores para caberem juntos
+    
+    // Criando o Dado A
+    diceMeshA = new THREE.Mesh(geometry, materials);
+    diceMeshA.position.set(-10, 0, -10); // Escondido
+    scene3d.add(diceMeshA);
+    
+    // Criando o Dado B
+    diceMeshB = new THREE.Mesh(geometry, materials);
+    diceMeshB.position.set(10, 0, -10); // Escondido
+    scene3d.add(diceMeshB);
+    
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene3d.add(ambientLight);
+    
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    dirLight.position.set(2, 4, 6);
+    scene3d.add(dirLight);
+    
+    animateThreeLoop();
+}
+
+
+// Desenha os pontos pretos do dado em um canvas para servir de textura
+function createDiceTexture(number) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 128, 128);
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.strokeRect(4, 4, 120, 120);
+    
+    ctx.fillStyle = '#0f172a';
+    const center = 64,
+        p1 = 32,
+        p3 = 96;
+    
+    const dots = {
+        1: [
+            [center, center]
+        ],
+        2: [
+            [p1, p1],
+            [p3, p3]
+        ],
+        3: [
+            [p1, p1],
+            [center, center],
+            [p3, p3]
+        ],
+        4: [
+            [p1, p1],
+            [p1, p3],
+            [p3, p1],
+            [p3, p3]
+        ],
+        5: [
+            [p1, p1],
+            [p1, p3],
+            [center, center],
+            [p3, p1],
+            [p3, p3]
+        ],
+        6: [
+            [p1, p1],
+            [p1, center],
+            [p1, p3],
+            [p3, p1],
+            [p3, center],
+            [p3, p3]
+        ]
+    };
+    
+    dots[number].forEach(dot => {
+        ctx.beginPath();
+        ctx.arc(dot[0], dot[1], 10, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    
+    return new THREE.CanvasTexture(canvas);
+}
+function hideDices(){
+    if (!isDiceRolling) {
+        diceMeshA.position.set(-0.4, 5.5, 2);
+    diceMeshB.position.set(0.4, 5.5, 2);
+    }
+
+}
+
+// Função de disparo ativada pelo clique no Phaser
+function throwDice(valA, valB) {
+    if (isDiceRolling) return;
+    
+    isDiceRolling = true;
+    bounceCountA = 0;
+    bounceCountB = 0;
+    
+    // Dado A cai um pouco para a esquerda, Dado B um pouco para a direita
+    diceMeshA.position.set(-0.4, 3.5, 2);
+    diceMeshB.position.set(0.4, 3.5, 2);
+    
+    // Forças físicas aleatórias ligeiramente diferentes para não caírem iguais
+    diceVelocityA.y = -0.12;
+    diceVelocityA.rX = Math.random() * 0.4 + 0.2;
+    diceVelocityA.rY = Math.random() * 0.4 + 0.2;
+    diceVelocityA.rZ = Math.random() * 0.4 + 0.2;
+    
+    diceVelocityB.y = -0.15;
+    diceVelocityB.rX = Math.random() * 0.4 + 0.2;
+    diceVelocityB.rY = Math.random() * 0.4 + 0.2;
+    diceVelocityB.rZ = Math.random() * 0.4 + 0.2;
+    
+    // Alvos finais de rotação
+    targetRotationA = diceFacesRotations[valA];
+    targetRotationB = diceFacesRotations[valB];
+}
+
+
+// Loop de atualização do Three.js
+function animateThreeLoop() {
+    requestAnimationFrame(animateThreeLoop);
+    
+    if (isDiceRolling) {
+        // --- ATUALIZA DADO A ---
+        diceVelocityA.y += gravity * 0.016;
+        diceMeshA.position.y += diceVelocityA.y;
+        diceMeshA.rotation.x += diceVelocityA.rX;
+        diceMeshA.rotation.y += diceVelocityA.rY;
+        diceMeshA.rotation.z += diceVelocityA.rZ;
+        
+        if (diceMeshA.position.y <= 0 && diceVelocityA.y < 0) {
+            if (bounceCountA < 2) {
+                diceVelocityA.y = -diceVelocityA.y * 0.4;
+                bounceCountA++;
+            } else {
+                diceMeshA.position.y = 0;
+                diceMeshA.rotation.set(targetRotationA.x, targetRotationA.y, targetRotationA.z);
+            }
+        }
+        
+        // --- ATUALIZA DADO B ---
+        diceVelocityB.y += gravity * 0.016;
+        diceMeshB.position.y += diceVelocityB.y;
+        diceMeshB.rotation.x += diceVelocityB.rX;
+        diceMeshB.rotation.y += diceVelocityB.rY;
+        diceMeshB.rotation.z += diceVelocityB.rZ;
+        
+        if (diceMeshB.position.y <= 0 && diceVelocityB.y < 0) {
+            if (bounceCountB < 2) {
+                diceVelocityB.y = -diceVelocityB.y * 0.4;
+                bounceCountB++;
+            } else {
+                diceMeshB.position.y = 0;
+                diceMeshB.rotation.set(targetRotationB.x, targetRotationB.y, targetRotationB.z);
+            }
+        }
+        
+        // Se ambos pararem no chão, desliga o estado de rolagem
+        if (diceMeshA.position.y === 0 && diceMeshB.position.y === 0) {
+            isDiceRolling = false;
+        }
+    }
+    
+    renderer3d.render(scene3d, camera3d);
+}
+
+
+
 // Configuração do jogo Phaser
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 1200;
@@ -7,15 +230,16 @@ const MARGIM_DOWN = 20;
 const MARGIM_LEFT = 60;
 const BOX_WIDTH = CANVAS_WIDTH - MARGIM_LEFT - MARGIM_RIGHT;
 const CENTER_SPACE = 24;
-const BOX_HEIGHT=(CANVAS_HEIGHT - MARGIM_TOP - MARGIM_DOWN)/2;
-const BOX_TOP=MARGIM_TOP + BOX_HEIGHT;
-const ESCALE_WHITE=0.03;
-const QTD_TRIANGLE=12;
-const TRIANGLE_HEIGHT = (BOX_HEIGHT*2) / QTD_TRIANGLE;
+const BOX_HEIGHT = (CANVAS_HEIGHT - MARGIM_TOP - MARGIM_DOWN) / 2;
+const BOX_TOP = MARGIM_TOP + BOX_HEIGHT;
+const ESCALE_WHITE = 0.03;
+const QTD_TRIANGLE = 12;
+const TRIANGLE_HEIGHT = (BOX_HEIGHT * 2) / QTD_TRIANGLE;
 const PIECE_SIZE = 62;
 
 const config = {
     type: Phaser.AUTO,
+    parent: 'phaser-container',
     width: CANVAS_WIDTH,
     height: CANVAS_HEIGHT,
     backgroundColor: '#d2b48c', // cor de fundo tipo madeira
@@ -39,65 +263,67 @@ function preload() {
 }
 
 function create() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
     
     // Desenha o tabuleiro básico
     drawBoard(this);
-
+    
     // Adiciona peças iniciais (exemplo simplificado)
     this.pieces = [];
-    let deep =1;
+    let deep = 1;
     let x = 0;
     let y = 0;
-    let PIECE_START_LEFT=(MARGIM_LEFT+(PIECE_SIZE/2));
-    let PIECE_START_RIGHT=(MARGIM_LEFT+BOX_WIDTH-(PIECE_SIZE/2));
-    let PIECE_START_DOWN=(CANVAS_HEIGHT-MARGIM_DOWN-(TRIANGLE_HEIGHT/2));
-    let PIECE_SPACE=TRIANGLE_HEIGHT;
+    let PIECE_START_LEFT = (MARGIM_LEFT + (PIECE_SIZE / 2));
+    let PIECE_START_RIGHT = (MARGIM_LEFT + BOX_WIDTH - (PIECE_SIZE / 2));
+    let PIECE_START_DOWN = (CANVAS_HEIGHT - MARGIM_DOWN - (TRIANGLE_HEIGHT / 2));
+    let PIECE_SPACE = TRIANGLE_HEIGHT;
     let PIECE_LEFT = 'piece_white';
     let PIECE_RIGHT = 'piece_black';
     for (let i = 0; i < 15; i++) {
         deep++;
-        let piece = this.add.image( 
-            PIECE_START_LEFT + x * PIECE_SIZE ,
-            PIECE_START_DOWN - y * PIECE_SPACE ,
-            PIECE_LEFT)
+        let piece = this.add.image(
+                PIECE_START_LEFT + x * PIECE_SIZE,
+                PIECE_START_DOWN - y * PIECE_SPACE,
+                PIECE_LEFT)
             .setScale(ESCALE_WHITE)
             .setInteractive()
             .setDepth(deep);
         this.pieces.push(piece);
         
         deep++;
-        piece = this.add.image( 
-            PIECE_START_RIGHT - x * PIECE_SIZE ,
-            PIECE_START_DOWN - y * PIECE_SPACE , 
-            PIECE_RIGHT)
+        piece = this.add.image(
+                PIECE_START_RIGHT - x * PIECE_SIZE,
+                PIECE_START_DOWN - y * PIECE_SPACE,
+                PIECE_RIGHT)
             .setScale(ESCALE_WHITE)
             .setInteractive()
             .setDepth(deep);
         this.pieces.push(piece);
         x++;
-        if(i==4){
-            x=0;
-            y=4;
-            PIECE_LEFT='piece_black';
-            PIECE_RIGHT='piece_white';
+        if (i == 4) {
+            x = 0;
+            y = 4;
+            PIECE_LEFT = 'piece_black';
+            PIECE_RIGHT = 'piece_white';
             
         }
-        if(i==7){
-           x=0;
-           y=6;
+        if (i == 7) {
+            x = 0;
+            y = 6;
         }
-        if(i==12){
-            x=0;
-            y=11;
+        if (i == 12) {
+            x = 0;
+            y = 11;
             PIECE_LEFT = 'piece_white';
             PIECE_RIGHT = 'piece_black';
         }
     }
-
+    
     // Habilita interação
     this.input.setDraggable(this.pieces);
     this.input.on('dragstart', (pointer, gameObject) => {
-        gameObject;//.setScale(escalaWhite);
+        gameObject; //.setScale(escalaWhite);
     });
     this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
         gameObject.x = dragX;
@@ -105,9 +331,54 @@ function create() {
     });
     this.input.on('dragend', (pointer, gameObject) => {
         deep++;
-        gameObject.setDepth(deep);//.setScale(escalaWhite);
+        gameObject.setDepth(deep); //.setScale(escalaWhite);
         // Aqui você pode implementar regras de posicionamento
     });
+    
+    // Captura o clique no celular para disparar o dado
+    this.input.on('pointerdown', () => {
+        hideDices();
+    });
+    // 1. Cria a forma visual do botão (um retângulo cinza escuro arredondado)
+    let botaoDados = this.add.graphics();
+    let heightBotaoLancar = 30;
+    let widthBotaoLancar = 130
+    botaoDados.fillStyle(0x1e293b, 1); // Cor ardósia escura
+    botaoDados.fillRoundedRect(width / 2, MARGIM_TOP + 5, widthBotaoLancar, heightBotaoLancar, 8); // Posição X, Y, Largura, Altura, Arredondamento
+    botaoDados.lineStyle(2, 0x3b82f6, 1); // Borda azul brilhante
+    botaoDados.strokeRoundedRect(width / 2, MARGIM_TOP + 5, widthBotaoLancar, heightBotaoLancar, 8);
+    
+    // 2. Adiciona o texto descritivo centralizado no botão
+    this.add.text((width / 2) + 15, MARGIM_TOP + 11, 'LANÇAR DADOS', {
+        fontSize: '13px',
+        fontWeight: 'bold',
+        fill: '#f8fafc',
+        fontFamily: 'sans-serif'
+    });
+    
+    // 3. Cria uma Zona Interativa invisível exatamente em cima do desenho do botão
+    let zonaInterativaBotao = this.add.zone(width / 2, MARGIM_TOP + 5, widthBotaoLancar, heightBotaoLancar)
+        .setOrigin(0)
+        .setInteractive();
+    
+    // 4. Executa o lançamento dos dados APENAS quando esta zona for clicada/tocada
+    zonaInterativaBotao.on('pointerdown', (pointer) => {
+        if (!isDiceRolling) {
+            // Sorteia os dois dados independentes
+            const resultadoA = Phaser.Math.Between(1, 6);
+            const resultadoB = Phaser.Math.Between(1, 6);
+            
+            // Atualiza o texto do resultado (ajuste a variável se o seu nome for diferente)
+            if (this.resultText) {
+                this.resultText.setText('Dados: ' + resultadoA + ' e ' + resultadoB);
+            }
+            
+            // Dispara a animação 3D no Three.js
+            throwDice(resultadoA, resultadoB);
+        }
+    });
+    
+    
 }
 
 function update() {
@@ -121,19 +392,19 @@ function drawBoard(scene) {
     graphics.strokeRect(
         MARGIM_LEFT,
         10,
-        (BOX_WIDTH/2),
+        (BOX_WIDTH / 2),
         75);
     graphics.strokeRect(
-        MARGIM_LEFT+(BOX_WIDTH/2),
+        MARGIM_LEFT + (BOX_WIDTH / 2),
         10,
-        (BOX_WIDTH/2), 
+        (BOX_WIDTH / 2),
         75);
-
+    
     // Desenha retângulo do tabuleiro
     graphics.strokeRect(MARGIM_LEFT, MARGIM_TOP, BOX_WIDTH, BOX_HEIGHT);
     
     graphics.strokeRect(MARGIM_LEFT, BOX_TOP, BOX_WIDTH, BOX_HEIGHT);
-
+    
     // Desenha divisões (triângulos do gamão)
     
     for (let i = 0; i < 12; i++) {
@@ -146,20 +417,23 @@ function drawBoard(scene) {
         graphics.beginPath();
         graphics.moveTo(x, y);
         graphics.lineTo(x, y + TRIANGLE_HEIGHT);
-        x = (BOX_WIDTH/2+MARGIM_LEFT)-(CENTER_SPACE/2);
+        x = (BOX_WIDTH / 2 + MARGIM_LEFT) - (CENTER_SPACE / 2);
         graphics.lineTo(x, y + TRIANGLE_HEIGHT / 2);
         graphics.closePath();
         graphics.fillPath();
-
-        x = BOX_WIDTH+MARGIM_LEFT;
+        
+        x = BOX_WIDTH + MARGIM_LEFT;
         // Triângulo inferior
         graphics.fillStyle(color, 1);
         graphics.beginPath();
         graphics.moveTo(x, y);
-        graphics.lineTo(x,y + TRIANGLE_HEIGHT);
-        x = (x/2) + (CENTER_SPACE*2);
-        graphics.lineTo(x,y + TRIANGLE_HEIGHT / 2);
+        graphics.lineTo(x, y + TRIANGLE_HEIGHT);
+        x = (x / 2) + (CENTER_SPACE * 2);
+        graphics.lineTo(x, y + TRIANGLE_HEIGHT / 2);
         graphics.closePath();
         graphics.fillPath();
     }
+    //window.onload = () => {
+    initThreeDice();
+    //  };
 }
