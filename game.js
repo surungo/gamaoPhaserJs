@@ -13,6 +13,11 @@ let diceVelocityA = { y: 0, rX: 0, rY: 0, rZ: 0 };
 let diceVelocityB = { y: 0, rX: 0, rY: 0, rZ: 0 };
 let targetRotationA = { x: 0, y: 0, z: 0 };
 let targetRotationB = { x: 0, y: 0, z: 0 };
+// Adicione isto nas variáveis globais (no topo do script)
+let finalXA = -0.4,
+    finalZA = -1.2;
+let finalXB = 0.4,
+    finalZB = -1.2;
 
 
 // Rotas exatas para as faces do dado apontarem para a camera
@@ -33,7 +38,7 @@ function initThreeDice() {
     
     camera3d = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera3d.position.set(0, 0, 8);
-    camera3d.lookAt(0, 0, 0);
+    camera3d.lookAt(0, 0, -0.8);
     
     renderer3d = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer3d.setSize(window.innerWidth, window.innerHeight);
@@ -45,7 +50,9 @@ function initThreeDice() {
         materials.push(new THREE.MeshStandardMaterial({
             map: createDiceTexture(i), // Usa a mesma função geradora de bolinhas
             roughness: 0.2,
-            metalness: 0.1
+            metalness: 0.1,
+            transparent: true, // <--- ADICIONE ESSA LINHA PARA PERMITIR TRANSPARÊNCIA
+            opacity: 1.0
         }));
     }
     
@@ -134,48 +141,59 @@ function createDiceTexture(number) {
     
     return new THREE.CanvasTexture(canvas);
 }
-function hideDices(){
-    if (!isDiceRolling) {
-        diceMeshA.position.set(-0.4, 5.5, 2);
-    diceMeshB.position.set(0.4, 5.5, 2);
-    }
 
+function setDiceOpacity(value) {
+    // Como o dado possui múltiplos materiais (um para cada face), precisamos rodar um loop em cada um
+    if (diceMeshA && diceMeshB) {
+        diceMeshA.material.forEach(mat => mat.opacity = value);
+        diceMeshB.material.forEach(mat => mat.opacity = value);
+    }
 }
 
 // Função de disparo ativada pelo clique no Phaser
 function throwDice(valA, valB) {
     if (isDiceRolling) return;
-    
+
     isDiceRolling = true;
     bounceCountA = 0;
     bounceCountB = 0;
+
+    // 1. Sorteia a posição final horizontal (X) e profundidade (Z) para onde eles vão cair
+    finalXA = -0.4 + (Math.random() * 0.4 - 0.2); 
+    finalXB = 0.4 + (Math.random() * 0.4 - 0.2);
     
-    // Dado A cai um pouco para a esquerda, Dado B um pouco para a direita
-    diceMeshA.position.set(-0.4, 3.5, 2);
-    diceMeshB.position.set(0.4, 3.5, 2);
+    // Mantemos o Z perto de -0.4 para que eles fiquem um pouco abaixo do centro, 
+    // mas não tão distantes a ponto de sumirem ou encolherem demais
+    finalZA = -0.5 + (Math.random() * 0.3 - 0.15);
+    finalZB = -0.5 + (Math.random() * 0.3 - 0.15);
+
+    // 2. Coloca os dados exatamente ACIMA da sua posição final (Alinhando o X e Z na largada)
+    // O dado já nasce na rota certa, apenas mudando a altura (Y = 3.5)
+    diceMeshA.position.set(finalXA, 3.5, finalZA); 
+    diceMeshB.position.set(finalXB, 3.5, finalZB); 
     
-    // Forças físicas aleatórias ligeiramente diferentes para não caírem iguais
-    diceVelocityA.y = -0.12;
+    // 3. Forças físicas verticais e de rotação caótica
+    diceVelocityA.y = -0.15;
     diceVelocityA.rX = Math.random() * 0.4 + 0.2;
     diceVelocityA.rY = Math.random() * 0.4 + 0.2;
     diceVelocityA.rZ = Math.random() * 0.4 + 0.2;
-    
+
     diceVelocityB.y = -0.15;
     diceVelocityB.rX = Math.random() * 0.4 + 0.2;
     diceVelocityB.rY = Math.random() * 0.4 + 0.2;
     diceVelocityB.rZ = Math.random() * 0.4 + 0.2;
-    
-    // Alvos finais de rotação
+
+    // Alvos de rotação das faces (mantenha igual)
     targetRotationA = diceFacesRotations[valA];
     targetRotationB = diceFacesRotations[valB];
 }
-
 
 // Loop de atualização do Three.js
 function animateThreeLoop() {
     requestAnimationFrame(animateThreeLoop);
     
     if (isDiceRolling) {
+        
         // --- ATUALIZA DADO A ---
         diceVelocityA.y += gravity * 0.016;
         diceMeshA.position.y += diceVelocityA.y;
@@ -189,6 +207,8 @@ function animateThreeLoop() {
                 bounceCountA++;
             } else {
                 diceMeshA.position.y = 0;
+                //diceMeshA.position.x = finalXA;
+                //diceMeshA.position.z = finalZA;
                 diceMeshA.rotation.set(targetRotationA.x, targetRotationA.y, targetRotationA.z);
             }
         }
@@ -206,6 +226,8 @@ function animateThreeLoop() {
                 bounceCountB++;
             } else {
                 diceMeshB.position.y = 0;
+                //diceMeshB.position.x = finalZB;
+               // diceMeshB.position.z = finalZB;
                 diceMeshB.rotation.set(targetRotationB.x, targetRotationB.y, targetRotationB.z);
             }
         }
@@ -335,10 +357,14 @@ function create() {
         // Aqui você pode implementar regras de posicionamento
     });
     
-    // Captura o clique no celular para disparar o dado
-    this.input.on('pointerdown', () => {
-        hideDices();
+    // Adicione isso dentro do create() da sua cena do Phaser:
+    this.input.on('pointerdown', (pointer) => {
+        // Se os dados não estiverem rolando no momento, diminui a opacidade para 0.2 (20%)
+        if (!isDiceRolling) {
+            setDiceOpacity(0.6);
+        }
     });
+    
     // 1. Cria a forma visual do botão (um retângulo cinza escuro arredondado)
     let botaoDados = this.add.graphics();
     let heightBotaoLancar = 30;
@@ -354,7 +380,8 @@ function create() {
         fontWeight: 'bold',
         fill: '#f8fafc',
         fontFamily: 'sans-serif'
-    });
+    })
+    //this.resultText = this.add.text(window.innerWidth - 180, 20, 'Dados: -', { fontSize: '18px', fill: '#ffffff', fontWeight: 'bold', fontFamily: 'sans-serif'});
     
     // 3. Cria uma Zona Interativa invisível exatamente em cima do desenho do botão
     let zonaInterativaBotao = this.add.zone(width / 2, MARGIM_TOP + 5, widthBotaoLancar, heightBotaoLancar)
@@ -364,12 +391,14 @@ function create() {
     // 4. Executa o lançamento dos dados APENAS quando esta zona for clicada/tocada
     zonaInterativaBotao.on('pointerdown', (pointer) => {
         if (!isDiceRolling) {
+            setDiceOpacity(1);
+            
             // Sorteia os dois dados independentes
             const resultadoA = Phaser.Math.Between(1, 6);
             const resultadoB = Phaser.Math.Between(1, 6);
             
             // Atualiza o texto do resultado (ajuste a variável se o seu nome for diferente)
-            if (this.resultText) {
+            if ( this.resultText) {
                 this.resultText.setText('Dados: ' + resultadoA + ' e ' + resultadoB);
             }
             
