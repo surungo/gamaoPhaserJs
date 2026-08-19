@@ -35,14 +35,17 @@ const diceFacesRotations = {
 function initThreeDice() {
     const container = document.getElementById('three-container');
     scene3d = new THREE.Scene();
-    
-    camera3d = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+    camera3d = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
     camera3d.position.set(0, 0, 8);
     camera3d.lookAt(0, 0, -0.8);
     
     renderer3d = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer3d.setSize(window.innerWidth, window.innerHeight);
+    renderer3d.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer3d.domElement.style.position = 'absolute';
     container.appendChild(renderer3d.domElement);
+    resizeThreeDice();
+    window.addEventListener('resize', resizeThreeDice);
     
     // Gerando materiais (faces) compartilhados para os dois dados
     const materials = [];
@@ -52,7 +55,7 @@ function initThreeDice() {
             roughness: 0.2,
             metalness: 0.1,
             transparent: true, // <--- ADICIONE ESSA LINHA PARA PERMITIR TRANSPARÊNCIA
-            opacity: 1.0
+            opacity: 0.0
         }));
     }
     
@@ -76,6 +79,23 @@ function initThreeDice() {
     scene3d.add(dirLight);
     
     animateThreeLoop();
+}
+
+function resizeThreeDice() {
+    if (!renderer3d || !camera3d) return;
+
+    const phaserCanvas = document.querySelector('#phaser-container canvas');
+    const bounds = phaserCanvas
+        ? phaserCanvas.getBoundingClientRect()
+        : document.getElementById('three-container').getBoundingClientRect();
+
+    renderer3d.setSize(bounds.width, bounds.height, false);
+    renderer3d.domElement.style.left = `${bounds.left}px`;
+    renderer3d.domElement.style.top = `${bounds.top}px`;
+    renderer3d.domElement.style.width = `${bounds.width}px`;
+    renderer3d.domElement.style.height = `${bounds.height}px`;
+    camera3d.aspect = bounds.width / bounds.height;
+    camera3d.updateProjectionMatrix();
 }
 
 
@@ -363,55 +383,13 @@ function create() {
         if (!isDiceRolling) {
             setDiceOpacity(0.6);
         }
-    });
-    
-    // 1. Cria a forma visual do botão (um retângulo cinza escuro arredondado)
-    let botaoDados = this.add.graphics();
-    let heightBotaoLancar = 30;
-    let widthBotaoLancar = 130
-    botaoDados.fillStyle(0x1e293b, 1); // Cor ardósia escura
-    botaoDados.fillRoundedRect(width / 2, MARGIM_TOP + 5, widthBotaoLancar, heightBotaoLancar, 8); // Posição X, Y, Largura, Altura, Arredondamento
-    botaoDados.lineStyle(2, 0x3b82f6, 1); // Borda azul brilhante
-    botaoDados.strokeRoundedRect(width / 2, MARGIM_TOP + 5, widthBotaoLancar, heightBotaoLancar, 8);
-    
-    // 2. Adiciona o texto descritivo centralizado no botão
-    this.add.text((width / 2) + 15, MARGIM_TOP + 11, 'LANÇAR DADOS', {
-        fontSize: '13px',
-        fontWeight: 'bold',
-        fill: '#f8fafc',
-        fontFamily: 'sans-serif'
-    })
-    //this.resultText = this.add.text(window.innerWidth - 180, 20, 'Dados: -', { fontSize: '18px', fill: '#ffffff', fontWeight: 'bold', fontFamily: 'sans-serif'});
-    
-    // 3. Cria uma Zona Interativa invisível exatamente em cima do desenho do botão
-    let zonaInterativaBotao = this.add.zone(width / 2, MARGIM_TOP + 5, widthBotaoLancar, heightBotaoLancar)
-        .setOrigin(0)
-        .setInteractive();
-    
-    // 4. Executa o lançamento dos dados APENAS quando esta zona for clicada/tocada
-    zonaInterativaBotao.on('pointerdown', (pointer) => {
-        if (!isDiceRolling) {
-            setDiceOpacity(1);
-            
-            // Sorteia os dois dados independentes
-            const resultadoA = Phaser.Math.Between(1, 6);
-            const resultadoB = Phaser.Math.Between(1, 6);
-            
-            // Atualiza o texto do resultado (ajuste a variável se o seu nome for diferente)
-            if ( this.resultText) {
-                this.resultText.setText('Dados: ' + resultadoA + ' e ' + resultadoB);
-            }
-            
-            // Dispara a animação 3D no Three.js
-            throwDice(resultadoA, resultadoB);
-        }
-    });
-    
+    });  
     
 }
 
 function update() {
     // Atualizações do jogo
+    
 }
 
 function drawBoard(scene) {
@@ -462,6 +440,51 @@ function drawBoard(scene) {
         graphics.closePath();
         graphics.fillPath();
     }
+        
+    // 1. Cria a forma visual do botão (um retângulo cinza escuro arredondado)
+    //let botaoDados = this.add.graphics();
+    let heightBotaoLancar = 30;
+    let widthBotaoLancar = 130
+    let xBotaoLancar = MARGIM_LEFT + (BOX_WIDTH / 2) - (widthBotaoLancar / 2);
+    let yBotaoLancar = MARGIM_TOP + 5;
+    graphics.fillStyle(0x1e293b, 1); // Cor ardósia escura
+    graphics.fillRoundedRect(xBotaoLancar, yBotaoLancar, widthBotaoLancar, heightBotaoLancar, 8); // Posição X, Y, Largura, Altura, Arredondamento
+    graphics.lineStyle(2, 0x3b82f6, 1); // Borda azul brilhante
+    graphics.strokeRoundedRect(xBotaoLancar, yBotaoLancar, widthBotaoLancar, heightBotaoLancar, 8);
+    
+    // 2. Adiciona o texto descritivo centralizado no botão
+    scene.add.text(xBotaoLancar + 15, yBotaoLancar + 11, 'LANÇAR DADOS', {
+        fontSize: '13px',
+        fontWeight: 'bold',
+        fill: '#f8fafc',
+        fontFamily: 'sans-serif'
+    })
+    //this.resultText = this.add.text(window.innerWidth - 180, 20, 'Dados: -', { fontSize: '18px', fill: '#ffffff', fontWeight: 'bold', fontFamily: 'sans-serif'});
+    
+    // 3. Cria uma Zona Interativa invisível exatamente em cima do desenho do botão
+    let zonaInterativaBotao = scene.add.zone(xBotaoLancar, yBotaoLancar, widthBotaoLancar, heightBotaoLancar)
+        .setOrigin(0)
+        .setInteractive();
+    
+    // 4. Executa o lançamento dos dados APENAS quando esta zona for clicada/tocada
+    zonaInterativaBotao.on('pointerdown', (pointer) => {
+        if (!isDiceRolling) {
+            setDiceOpacity(1);
+            
+            // Sorteia os dois dados independentes
+            const resultadoA = Phaser.Math.Between(1, 6);
+            const resultadoB = Phaser.Math.Between(1, 6);
+            
+            // Atualiza o texto do resultado (ajuste a variável se o seu nome for diferente)
+            if (scene.resultText) {
+                scene.resultText.setText('Dados: ' + resultadoA + ' e ' + resultadoB);
+            }
+            
+            // Dispara a animação 3D no Three.js
+            throwDice(resultadoA, resultadoB);
+        }
+    });
+  
     //window.onload = () => {
     initThreeDice();
     //  };
